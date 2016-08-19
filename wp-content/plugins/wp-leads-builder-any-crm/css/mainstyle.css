@@ -1,0 +1,360 @@
+
+
+#innerhead h3
+{
+background-color: #37707D;
+color: #FFFFFF !important;
+font-family: "Open Sans",sans-serif !important;
+font-size: 16px !important;
+font-weight: 700 !important;
+margin-top: -10px;
+//margin: 6px 0 15px 20px;
+padding: 25px;
+
+}
+
+
+#innerheader {
+background-color: #37707D;
+color: #FFFFFF !important;
+font-family: "Open Sans",sans-serif !important;
+font-size: 16px !important;
+font-weight: 700 !important;
+margin-top: -10px;
+//margin: 6px 0 15px 20px;
+padding: 25px; 
+} 
+
+
+#inneroptions {
+color: #004d40 !important;
+font-family: "Open Sans",sans-serif !important;
+font-size: 16px !important;
+font-weight: bold !important;
+}
+
+#innertext {
+    color: #004d40 !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+    font-family: "Open Sans",sans-serif !important;
+}
+
+#formtext {
+color: #333 !important;
+font-family: "Open Sans",sans-serif !important;
+font-size: 14px !important;
+font-weight: 700 !important;
+/*margin: 6px 0 15px 0px;	*/
+/*padding: 10px 0px; */
+}
+
+.headertabs
+{
+	margin-top:30px;
+}
+
+.headertab
+{
+	padding:10px;
+	border:1px solid green;
+	border-radius: 5px 5px 0 0;
+	text-decoration:none;
+	cursor:pointer;
+}
+
+.smack-sugar-pro-pointer {
+	cursor: pointer;
+}
+.selected
+{
+	background-color:cyan;
+}
+
+.smack-ultimate-menu-link{
+        border-top-left-radius: 6px;
+        border-top-right-radius: 6px;
+        background: none repeat scroll 0 0 #E8F1F5;
+        color: #103A4D;
+        padding: 0.75em .5em;
+}
+
+.smack_pointer {
+	cursor: pointer;
+}
+
+.position-text-box {
+	background: white;
+	border: 1px solid #999;
+	border-radius: 5px;
+	box-shadow: 0 0 5px #DDD inset;
+	color: #666;
+	outline: none;
+	border-radius: 5px;
+	text-align: center;
+	width: 40px;
+}
+
+th.smack-crm-free-list-view-th {
+	text-align: center;
+}
+
+
+.smack_alt {
+    background-color: #f9f9f9;
+}
+
+
+.smack-field-td-middleit {
+    text-align: center;
+}
+
+.smack_alt th h5 {
+    font-weight: bold;
+}
+
+th.smack-crm-free-list-view-th {
+	text-align: center;
+}
+
+.smack_highlight
+{
+    height: 40px;
+}
+
+.smack-crm-pro-highlight
+{
+    height: 50px;
+}
+
+.smack-crm-pro-alt{
+    background-color: #F9F9F9;
+}
+
+p.display_success {
+	height: 40px;
+	background-color: rgb(197, 255, 199);
+	color: green;
+	padding: 10px;
+	font-weight: bold;
+}
+p.display_failure {
+        height: 40px;
+        background-color: #F78592;
+        color: green;
+        padding: 10px;
+        font-weight: bold;
+}
+
+
+.settings-table td {
+	padding: 10px;
+	padding-left: 0px;
+}
+
+.activate {
+	color: #fff !important;
+	background-color: #0074A2;
+}
+
+.activate a{
+	color: #fff !important;
+}
+
+.deactivate a{
+	color: #fff !important;
+}
+
+.wp-common-crmwrapper{
+	background-color: #FAFAFA;
+	padding: 10px 0px 10px 0px;
+	overflow: hidden;
+	margin-right: 25px;
+	margin-top: 20px;
+}
+
+.wp-common-crmwrapper h3{
+	font: bold 14px Verdana;
+	text-decoration: none;
+	position: relative;
+	padding: 7px 22px;
+	color: #fff;
+	outline: none;
+	background: #222222;
+	border: 1px solid #333333;
+	margin-top: -10px;
+	/* text-transform: uppercase; */
+}
+
+.settings-table h5{
+	font-weight: bold;
+}
+
+.wp-common-crm-content{
+	padding-left: 20px; 
+}
+
+
+.tooltip {
+    outline: none;
+}
+
+.tooltip strong {
+    line-height: 20px;
+}
+
+.tooltip:hover {
+    text-decoration: none;
+}
+
+.tooltip span {
+    z-index: 10;
+    display: none;
+    padding: 3px 12px;
+}
+
+.tooltip:hover span {
+    display: inline;
+    position: absolute;
+    color: #111;
+    border: 1px solid #DCA;
+    background: #fffAF0;
+}
+
+.callout {
+    z-index: 20;
+    position: absolute;
+    top: 8px;
+    border: 0;
+    left: -12px;
+}
+
+.tooltip span {
+    border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+
+    -moz-box-shadow: 5px 5px 8px #CCC;
+    -webkit-box-shadow: 5px 5px 8px #CCC;
+    box-shadow: 5px 5px 8px #CCC;
+}
+
+.tooltipCustompost {
+    margin-top: -27px;
+    margin-left: 27px;
+    width: 225px;
+    line-height: 30px;
+}
+
+.tooltipPostStatus {
+    min-height: 50px;
+    margin-top: -13px;
+    margin-left: 13px;
+    width: 325px;
+    line-height: 20px;
+    -webkit-margin-start: 28px;
+    -webkit-margin-end: 0px;
+    -webkit-margin-before: -28px;
+}
+
+.tooltipClearMapping {
+    margin-top: -13px;
+    margin-left: 13px;
+    width: 225px;
+    line-height: 30px;
+    -webkit-margin-start: 21px;
+    -webkit-margin-end: 0px;
+    -webkit-margin-before: -28px;
+}
+
+/*Checkbox Styles*/
+.cmn-toggle {
+  position: absolute;
+  margin-left: -9999px;
+  visibility: hidden;
+}
+.cmn-toggle + label {
+  display: block;
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+input.cmn-toggle-yes-no + label {
+  padding: 2px;
+  width: 50px;
+  height: 30px;
+}
+input.cmn-toggle-yes-no + label:before, input.cmn-toggle-yes-no + label:after {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  color: #fff;
+  font-family: "Roboto Slab", serif;
+  font-size: 15px;
+  text-align: center;
+  line-height: 32px;
+}
+input.cmn-toggle-yes-no + label:before {
+  background-color: #dddddd;
+  content: attr(data-off);
+  -webkit-transition: -webkit-transform 0.5s;
+  -moz-transition: -moz-transform 0.5s;
+  -o-transition: -o-transform 0.5s;
+  transition: transform 0.5s;
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
+  -ms-backface-visibility: hidden;
+  -o-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+input.cmn-toggle-yes-no + label:after {
+  background-color: #8ce196;
+  content: attr(data-on);
+  -webkit-transition: -webkit-transform 0.5s;
+  -moz-transition: -moz-transform 0.5s;
+  -o-transition: -o-transform 0.5s;
+  transition: transform 0.5s;
+  -webkit-transform: rotateY(180deg);
+  -moz-transform: rotateY(180deg);
+  -ms-transform: rotateY(180deg);
+  -o-transform: rotateY(180deg);
+  transform: rotateY(180deg);
+  -webkit-backface-visibility: hidden;
+  -moz-backface-visibility: hidden;
+  -ms-backface-visibility: hidden;
+  -o-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+input.cmn-toggle-yes-no:checked + label:before {
+  -webkit-transform: rotateY(180deg);
+  -moz-transform: rotateY(180deg);
+  -ms-transform: rotateY(180deg);
+  -o-transform: rotateY(180deg);
+  transform: rotateY(180deg);
+}
+input.cmn-toggle-yes-no:checked + label:after {
+  -webkit-transform: rotateY(0);
+  -moz-transform: rotateY(0);
+  -ms-transform: rotateY(0);
+  -o-transform: rotateY(0);
+  transform: rotateY(0);
+}
+
+.settings-table {
+    width: 60%;
+}
+
+input.urlfield {
+    width: 100%;
+}
+
+p.submit {
+   padding: 15px;
+}
