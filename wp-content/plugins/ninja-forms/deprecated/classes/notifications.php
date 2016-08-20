@@ -31,6 +31,8 @@ class NF_Notifications
 		Ninja_Forms()->notification_types['email'] = require_once( NF_PLUGIN_DIR . 'classes/notification-email.php' );
 		Ninja_Forms()->notification_types['redirect'] = require_once( NF_PLUGIN_DIR . 'classes/notification-redirect.php' );
 		Ninja_Forms()->notification_types['success_message'] = require_once( NF_PLUGIN_DIR . 'classes/notification-success-message.php' );
+		Ninja_Forms()->notification_types['webhook'] = require_once( NF_PLUGIN_DIR . 'classes/notification-webhooks.php' );
+		
 
 		Ninja_Forms()->notification_types = apply_filters( 'nf_notification_types', Ninja_Forms()->notification_types );
 
