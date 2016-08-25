@@ -26,6 +26,22 @@ class DB_RoomRates {
 		return $rates_array;
 	}
 	
+	function getHighesRates(){
+		global $wpdb; //get wb db instance
+	
+		$query = "SELECT hotel_roomrates.hotel_rooms_id as room_id, MAX(hotel_roomrates.rate) as rate
+				from
+				hotel_roomrates
+				group by hotel_roomrates.hotel_rooms_id";
+		$rates = $wpdb->get_results($query);
+	
+		$rates_array = array();
+		foreach($rates as $r){
+			$rates_array[$r->room_id] = $r->rate;
+		}
+		return $rates_array;
+	}
+	
 	function getRatesArray(){
 		$rates = array();
 		$rooms = $this->getAll();

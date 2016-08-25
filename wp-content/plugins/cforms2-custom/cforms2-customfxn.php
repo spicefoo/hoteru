@@ -62,6 +62,11 @@ function my_cforms_logic($cformsdata, $oldvalue, $setting) {
 			
 			return $oldvalue . '<br />Form submitted on ' . date ( 'D, d M Y H:i:s' );
 		}
+		
+		//if form has compu field, it means the form has data to be computed and a quotation to show
+		if(form_is_compu($cformsdata)){
+			return compute_quote($cformsdata);
+		}
 	}
 	
 	// ## example: the below code changes a user-variable in both the Text & HTML part of
@@ -217,42 +222,79 @@ function my_cforms_ajax_filter($formID) {
  * gets triggered just before sending the admin email
  */
 
+function form_is_compu($cformsdata){
+	//check first if this form is for compu, if none, then there's no need to run further
+	$formID = $cformsdata ['id'];
+	$form = $cformsdata ['data'];
+	
+	return isset($form['compu']);
+}
+
+function add_tax($val, $percentage){
+	return $val + ($val * $percentage);
+}
+
 /*
  * Computes the quotation of the reservation accdg to the submitted data and form values.
  *
  */
 function compute_quote($cformsdata) {
-	return;
-	
-	//check first if this form is for compu, if none, then there's no need to run further
+	global $wpdb, $cformsSettings;
 	$formID = $cformsdata ['id'];
 	$form = $cformsdata ['data'];
 	
-	if(!isset($form['compu'])) return;
-	
-	
-	global $wpdb;
 	$db_rooms = new DB_Rooms ();
 	$rooms = $db_rooms->getAll ();
 	
 	$db_roomrates = new DB_RoomRates ();
-	$roomrates = $db_roomrates->getRatesArray ();
-	$lowrates = $db_roomrates->getLowestRates ();
+	$roomrates = $db_roomrates->getHighesRates ();
 	
 	$date_diff = date_diff ( date_create($form[$form ['$$$check_in']]), date_create($form[$form ['$$$check_out']] ));
 	$total_days = $date_diff->format ( '%a' ); // days
 	
+	$room_data = array();
 	$total_quote = 0;
 	
 	foreach ( $rooms as $r ) {
 		if (isset ( $form ['$$$room-' . $r->id] ) && ($form [$form ['$$$room-' . $r->id]] > 0)) {
-			
 			$room_id = $r->id;
 			$units = $form [$form ['$$$room-' . $r->id]];
-			$total_quote += ($total_days * $units * $lowrates[$room_id] ); //tot += days * #rooms * rate
+			$total_price = $units * $roomrates[$r->id];
+			
+			
+			//for the display
+			$room_data['rooms'][] = array(
+				'name' => $r->name,
+				'units'=> $form [$form ['$$$room-' . $r->id]],
+				'unit_price' => $roomrates[$r->id],
+				'total_price' => $total_price,
+			);
+			
+			$total_quote += $total_price;
 		}
 	}
-	echo $total_quote;
+
+	//computing total before tax
+	$room_data['total_wo_days'] = $total_quote;
+	$total_quote *= $total_days;
+	
+	//for the display
+	$room_data['days'] = $total_days;
+	$room_data['total_wo_tax'] = $total_quote;
+	$room_data['tax_10'] = add_tax($total_quote, 0.10);
+	$room_data['tax_12'] = add_tax($total_quote, 0.12);
+	
+	//adding tax
+	$total_quote = add_tax($total_quote, 0.10);
+	$total_quote = add_tax($total_quote, 0.12);
+	
+	//for the display
+	$room_data['total'] = $total_quote;
+	
+	//setup display
+	ob_start();
+	require_once (plugin_dir_path ( __FILE__ ) . 'include/quote.php');
+	return ob_get_clean();
 }
 
 function sendto_vtiger($cformsdata){
@@ -261,12 +303,12 @@ function sendto_vtiger($cformsdata){
 	$formID = $cformsdata ['id'];
 	$form = $cformsdata ['data'];
 	
-	if(!isset($form['crm']) || !isValidURL($cformsSettings['form'.$formID]['cforms2_action_page']) || !isValidPublicid($cformsSettings['form'.$formID]['cforms2_redirect_page'])) return;
+	if(!isset($form['crm']) || !isValidURL($cformsSettings['form'.$formID]['cforms'.$formID.'_action_page']) || !isValidPublicid($cformsSettings['form'.$formID]['cforms'.$formID.'_redirect_page'])) return;
 	
-	$post_url = $cformsSettings['form'.$formID]['cforms2_action_page'];
+	$post_url = $cformsSettings['form'.$formID]['cforms'.$formID.'_action_page'];
 	
 	$post_data = format_postdata($form);
-	$post_data['publicid'] = $cformsSettings['form'.$formID]['cforms2_redirect_page'];
+	$post_data['publicid'] = $cformsSettings['form'.$formID]['cforms'.$formID.'_redirect_page'];
 	
 	
 	return sendto_curl($post_url, $post_data);
@@ -326,5 +368,5 @@ function format_postdata($data){
 /**
  * Add all the custom actions needed
  */
-add_action ( 'cforms2_after_processing_action', 'compute_quote' );
+// add_action ( 'cforms2_after_processing_action', 'compute_quote' );
 add_action ( 'cforms2_after_processing_action', 'sendto_vtiger' );
