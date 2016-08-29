@@ -247,7 +247,7 @@ function compute_quote($cformsdata) {
 	$rooms = $db_rooms->getAll ();
 	
 	$db_roomrates = new DB_RoomRates ();
-	$roomrates = $db_roomrates->getHighesRates ();
+	$roomrates = $db_roomrates->getHighestRates ();
 	
 	$date_diff = date_diff ( date_create($form[$form ['$$$check_in']]), date_create($form[$form ['$$$check_out']] ));
 	$total_days = $date_diff->format ( '%a' ); // days
@@ -281,19 +281,18 @@ function compute_quote($cformsdata) {
 	//for the display
 	$room_data['days'] = $total_days;
 	$room_data['total_wo_tax'] = $total_quote;
-	$room_data['tax_10'] = add_tax($total_quote, 0.10);
-	$room_data['tax_12'] = add_tax($total_quote, 0.12);
+	$room_data['tax_10'] = $total_quote * 0.10;
+	$room_data['tax_12'] = $total_quote * 0.12;
 	
 	//adding tax
-	$total_quote = add_tax($total_quote, 0.10);
-	$total_quote = add_tax($total_quote, 0.12);
+	$total_quote += $room_data['tax_10'] + $room_data['tax_12']; 
 	
 	//for the display
 	$room_data['total'] = $total_quote;
 	
 	//setup display
 	ob_start();
-	require_once (plugin_dir_path ( __FILE__ ) . 'include/quote.php');
+	require (plugin_dir_path ( __FILE__ ) . 'include/quote.php');
 	return ob_get_clean();
 }
 
@@ -305,14 +304,15 @@ function sendto_vtiger($cformsdata){
 	
 	if(!isset($form['crm']) || !isValidURL($cformsSettings['form'.$formID]['cforms'.$formID.'_action_page']) || !isValidPublicid($cformsSettings['form'.$formID]['cforms'.$formID.'_redirect_page'])) return;
 	
-	$post_url = $cformsSettings['form'.$formID]['cforms'.$formID.'_action_page'];
-	
+	//prep data
+	$form['quote'] = strip_tags(compute_quote($cformsdata));
 	$post_data = format_postdata($form);
+	
+	// post url and vtiger webform publicid
+	$post_url = $cformsSettings['form'.$formID]['cforms'.$formID.'_action_page'];
 	$post_data['publicid'] = $cformsSettings['form'.$formID]['cforms'.$formID.'_redirect_page'];
-	
-	
+
 	return sendto_curl($post_url, $post_data);
-	
 }
 
 function sendto_curl($url, $data){
