@@ -58,10 +58,10 @@ function my_cforms_logic($cformsdata, $oldvalue, $setting) {
 	if ($setting == "successMessage" && $oldvalue != '') {
 		
 		// ## only form #1 (default form) should be affected:
-		if ($cformsdata ['id'] == '') {
+// 		if ($cformsdata ['id'] == '') {
 			
-			return $oldvalue . '<br />Form submitted on ' . date ( 'D, d M Y H:i:s' );
-		}
+// 			return $oldvalue . '<br />Form submitted on ' . date ( 'D, d M Y H:i:s' );
+// 		}
 		
 		//if form has compu field, it means the form has data to be computed and a quotation to show
 		if(form_is_compu($cformsdata)){

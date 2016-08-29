@@ -8,6 +8,8 @@
  *  
  */
 
+$currency = "Php ";
+
 ?>
 
 <?php if(!isset($room_data) || empty($room_data)) echo('Nothing to see here'); ?>
@@ -24,27 +26,27 @@
 	<tr>
 		<td><?php echo $r['name']; ?></td>
 		<td><?php echo $r['units']; ?></td>
-		<td><?php echo $r['unit_price']; ?></td>
-		<td><?php echo $r['total_price']; ?></td>
+		<td><?php echo $currency . number_format( $r['unit_price'], 2, '.', ',' ); ?></td>
+		<td><?php echo $currency . number_format( $r['total_price'], 2, '.', ',' ); ?></td>
 	</tr>
 	<?php }	?>
 	<tr>
 		<td colspan="3">Total</td>
-		<td><?php echo $room_data['total_wo_days']?></td>
+		<td><?php echo $currency . number_format( $room_data['total_wo_days'], 2, '.', ',' ); ?></td>
 	</tr>
 	<tr>
 		<td colspan="3">x Number of Days (<?php echo $room_data['days']; ?>)</td>
-		<td><?php echo $room_data['total_wo_tax']?></td>
+		<td><?php echo $currency . number_format( $room_data['total_wo_tax']); ?></td>
 	</tr>
 	<tr>
 		<td colspan="3">Service Charge</td>
-		<td><?php echo $room_data['tax_10']?></td>
+		<td><?php echo $currency . number_format( $room_data['tax_10'], 2, '.', ',' ); ?></td>
 	</tr><tr>
 		<td colspan="3">Tax</td>
-		<td><?php echo $room_data['tax_12']?></td>
+		<td><?php echo $currency . number_format( $room_data['tax_12'], 2, '.', ',' ); ?></td>
 	</tr><tr>
 		<td colspan="3"><b>Total</b></td>
-		<td><?php echo $room_data['total']?></td>
+		<td><?php echo $currency . number_format( $room_data['total'], 2, '.', ',' ); ?></td>
 	</tr>
 </table>
 
