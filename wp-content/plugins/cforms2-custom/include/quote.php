@@ -31,12 +31,15 @@ $currency = "Php ";
 	</tr>
 	<?php }	?>
 	<tr>
-		<td colspan="3">Total</td>
-		<td><?php echo $currency . number_format( $room_data['total_wo_days'], 2, '.', ',' ); ?></td>
+		<td colspan="3"><b>Sub Total</b></td>
+		<td><b><?php echo $currency . number_format( $room_data['total_wo_days'], 2, '.', ',' ); ?></b></td>
+	</tr>
+	<tr>
+		<td colspan="4"></td>
 	</tr>
 	<tr>
 		<td colspan="3">x Number of Days (<?php echo $room_data['days']; ?>)</td>
-		<td><?php echo $currency . number_format( $room_data['total_wo_tax']); ?></td>
+		<td><?php echo $currency . number_format( $room_data['total_wo_tax'], 2, '.', ',' ); ?></td>
 	</tr>
 	<tr>
 		<td colspan="3">Service Charge</td>
@@ -46,7 +49,7 @@ $currency = "Php ";
 		<td><?php echo $currency . number_format( $room_data['tax_12'], 2, '.', ',' ); ?></td>
 	</tr><tr>
 		<td colspan="3"><b>Total</b></td>
-		<td><?php echo $currency . number_format( $room_data['total'], 2, '.', ',' ); ?></td>
+		<td><b><?php echo $currency . number_format( $room_data['total'], 2, '.', ',' ); ?></b></td>
 	</tr>
 </table>
 
