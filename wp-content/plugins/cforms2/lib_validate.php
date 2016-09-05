@@ -450,6 +450,23 @@ if( isset($_FILES['cf_uploadfile'.$no]) && $all_valid){
     } ### while all file
 
 } ### no file upload triggered
+
+
+###
+### additional validations
+###
+if( function_exists('my_cforms_validations')){
+	
+	$data = my_cforms_validations($_POST);
+	
+	if($data['err'] == 1){
+		$err = 1;
+		$cformsSettings['form'.$no]['cforms'.$no.'_failure'] = $data['err_txt'];
+		$all_valid = false;
+	}
+	
+}
+
 ###
 ### what kind of error message?
 ###

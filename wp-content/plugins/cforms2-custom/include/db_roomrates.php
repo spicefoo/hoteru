@@ -46,7 +46,8 @@ class DB_RoomRates {
 		$rates = array();
 		$rooms = $this->getAll();
 		foreach ($rooms as $r){
-			$rates[$r->hotel_rooms_id][$r->capacity] = array($r->rate, $r->allow_extra);
+			$rates[$r->hotel_rooms_id][$r->capacity] = array('rate' 		=>	$r->rate, 
+															'allow_extra' 	=> 	$r->allow_extra);
 		}
 		return $rates;
 	}

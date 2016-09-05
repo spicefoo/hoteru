@@ -36,6 +36,8 @@
 // ##
 require_once (plugin_dir_path ( __FILE__ ) . 'include/db_rooms.php');
 require_once (plugin_dir_path ( __FILE__ ) . 'include/db_roomrates.php');
+require_once (plugin_dir_path(__FILE__) . 'include/lib_custommsgs.php');
+
 function my_cforms_logic($cformsdata, $oldvalue, $setting) {
 	
 	// ## If you're unsure how to reference $cformsdata use the below mail call to send you the data array
@@ -64,7 +66,7 @@ function my_cforms_logic($cformsdata, $oldvalue, $setting) {
 // 		}
 		
 		//if form has compu field, it means the form has data to be computed and a quotation to show
-		if(form_is_compu($cformsdata)){
+		if(form_is_compu($cformsdata['data'])){
 			return compute_quote($cformsdata);
 		}
 	}
@@ -224,10 +226,7 @@ function my_cforms_ajax_filter($formID) {
 
 function form_is_compu($cformsdata){
 	//check first if this form is for compu, if none, then there's no need to run further
-	$formID = $cformsdata ['id'];
-	$form = $cformsdata ['data'];
-	
-	return isset($form['compu']);
+	return isset($cformsdata['compu']);
 }
 
 function add_tax($val, $percentage){
@@ -252,7 +251,7 @@ function compute_quote($cformsdata) {
 	$date_diff = date_diff ( date_create($form[$form ['$$$check_in']]), date_create($form[$form ['$$$check_out']] ));
 	$total_days = $date_diff->format ( '%a' ); // days
 	
-	$room_data = array();
+	$room_data = array(); //for the display
 	$total_quote = 0;
 	
 	foreach ( $rooms as $r ) {
@@ -263,7 +262,7 @@ function compute_quote($cformsdata) {
 			
 			
 			//for the display
-			$room_data['rooms'][] = array(
+			$room_data['rooms'][$r->id] = array(
 				'name' => $r->name,
 				'units'=> $form [$form ['$$$room-' . $r->id]],
 				'unit_price' => $roomrates[$r->id],
@@ -364,6 +363,66 @@ function format_postdata($data){
 	
 	return $post_data;
 }
+
+function my_cforms_validations($postdata){
+	global $cformsSettings, $err_msgs;
+	
+	if(form_is_compu($postdata)){
+		$data['err'] = 0;
+		$data['err_txt'] = '';
+		
+		if(!validDateInterval($postdata)){
+			$data['err'] = 1;
+			$data['err_txt'] .= '<li>'.$err_msgs['cforms_invalidinterval'].'</li>';
+		}
+		
+		if(!guestsFit($postdata)){
+			$data['err'] = 1;
+			$data['err_txt'] .= '<li>'.$err_msgs['cforms_invalidnumguest'].'</li>';
+		}
+		
+		return $data;
+	}else{
+		return;
+	}
+}
+
+#@TODO
+function validDateInterval($data){
+	return true;
+}
+
+function guestsFit($data){
+	$n = $data['num_guests'];
+	$max = getMaxCapacity($data);
+	
+	return $max >= $n;
+}
+
+function getMaxCapacity($data){
+	$db_rooms = new DB_Rooms ();
+	$rooms = $db_rooms->getAll ();
+	
+	$db_roomrates = new DB_RoomRates ();
+	$roomrates = $db_roomrates->getRatesArray();
+	
+	$max = 0;
+	$default_cap = 2;
+	
+	foreach ( $rooms as $r ) {
+		if (isset ( $data ['room-' . $r->id] ) && ($data ['room-' . $r->id] > 0)) {
+			//echo "room: " . $r->name . " cap: " . $default_cap . " extra: " . $roomrates[$r->id][$default_cap]['allow_extra'] . " x units: " . $data ['room-' . $r->id] . "<br/>";
+			$max += $data ['room-' . $r->id] * ($default_cap + $roomrates[$r->id][$default_cap]['allow_extra']);
+		}
+	}
+	
+	return $max;
+}
+
+function getExtraPeeps($data){
+	$max = getMaxCapacity($data);
+}
+
 
 /**
  * Add all the custom actions needed
