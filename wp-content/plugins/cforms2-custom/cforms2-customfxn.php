@@ -44,27 +44,7 @@ function my_cforms_logic($cformsdata, $oldvalue, $setting) {
 	// ## If you're unsure how to reference $cformsdata use the below mail call to send you the data array
 	// ## wp_mail('you@example.com', 'my_cforms_logic test', print_r($cformsdata,1), 'From: you@example.com');
 	
-	// ##
-	// ## example: the below code modifies the REPLY-TO address (submitter)
-	if ($setting == "ReplyTo" && $oldvalue != '') {
-		
-		// ## only form #2 should be affected (note: form #1 would be '' empty!!):
-		if ($cformsdata ['id'] == '2' && $cformsdata ['data'] ['Your Name'] != '') {
-			
-			return '"' . $cformsdata ['data'] ['Your Name'] . '"' . ' <' . $oldvalue . '>'; // ## This requires the form to have field labeled "Your Name" !
-		}
-	}
-	
-	// ##
-	// ## example: the below code changes the original Success Message
-	
 	if ($setting == "successMessage" && $oldvalue != '') {
-		
-		// ## only form #1 (default form) should be affected:
-// 		if ($cformsdata ['id'] == '') {
-			
-// 			return $oldvalue . '<br />Form submitted on ' . date ( 'D, d M Y H:i:s' );
-// 		}
 		
 		//if form has compu field, it means the form has data to be computed and a quotation to show
 		if(form_is_compu($cformsdata['data'])){
@@ -72,152 +52,7 @@ function my_cforms_logic($cformsdata, $oldvalue, $setting) {
 		}
 	}
 	
-	// ## example: the below code changes a user-variable in both the Text & HTML part of
-	// ## the admin email & auto confirmation email
-	
-	if ($setting == "adminEmailTXT" || $setting == "adminEmailHTML" || $setting == "autoConfTXT" || $setting == "autoConfHTML" || $setting == "adminEmailDataTXT" || $setting == "adminEmailDataHTML") {
-		
-		// ## it's only changed though for form #2
-		// ## and requires "{CustomSalutation}" to be in the message(s)
-		if ($cformsdata ['id'] == 2) {
-			
-			// ## Returned message depends on user choosing the radio option "Mrs" or "Mr" (field value!)
-			if ($cformsdata ['data'] ['Salutation'] == 'Mrs')
-				return str_replace ( '{CustomSalutation}', 'Dear Mrs. ', $oldvalue );
-			else
-				return str_replace ( '{CustomSalutation}', 'Dear Mr. ', $oldvalue );
-		}
-	}
-	
-	// ## example: the below code replaces the custom var {DateFuture=Nd} in the subject
-	// ## field of the admin email & auto confirmation email
-	// ## Code Contribution by Regis Villemin
-	
-	if ($setting == "autoConfSUBJ" || $setting == "autoConfSUBJ") {
-		$m = preg_replace_callback ( '/{DateFuture=([0-9]+)d}/i', create_function ( '$days', '
-
-							$datefuture = strtotime ("+$days[1] days");
-							
-							return strtoupper( strftime( "%A %d %B %Y",  $datefuture ) );
-							' ), $oldvalue );
-		
-		return $m;
-	}
-	
-	// ## example: changes the next form to be form ID 5 (which is multi form page enabled)
-	
-	if ($setting == "nextForm") {
-		
-		// ## the below only triggers when the configured "next form" would have been 4
-		// ## and the user did not check extended option checkbox
-		if ($oldvalue == '4' && $cformsdata ['data'] ['extended options'] == 'on')
-			return 5;
-	}
-	
-	// ## example: changes the admin email address to "test123 <my@dif..." if placeholder 'placeholder' is found
-	
-	if ($setting == "adminTO") {
-		
-		if ($oldvalue == 'placeholder')
-			return 'test123 <my@different-email.example>';
-	}
-	
-	// ## example: changes the name of the uploaded file in the email (adding a prefix taken form a form field)
-	
-	if ($setting == "filename") {
-		return $_POST ['filetype'] . $oldvalue;
-	}
-	
-	// ## example: allows the final destination file path & name to be modified, return result = a full, absolute path
-	// ## NOTE: changing the path or filename may cause the file links on the tracking page to not function anymore!
-	
-	if ($setting == "fileDestination") {
-		
-		$submissionID = $oldvalue ['subID']; // ## submission ID
-		
-		$newArray = array ();
-		$newArray ['name'] = $submissionID . '-' . $oldvalue ['name']; // ## filename only
-		$newArray ['path'] = rtrim ( $oldvalue ['path'], '/' ); // ## path (may or may not have trailing slash!)
-		
-		$newArray ['modified'] = true; // ## must set
-		return $newArray; // ## TRIPPLE check that this array always! returns valid path + name info
-	}
-	
-	// ## this allows to modify the file path shown on the tracking page and for downloads
-	// ## you may only needs the below in case the final upload dir deviates from the form's configured one
-	
-	if ($setting == "fileDestinationTrackingPage") {
-		
-		$submissionID = $oldvalue ['subID']; // ## submission ID
-		
-		$newArray = array ();
-		$newArray ['name'] = $submissionID . '-' . $oldvalue ['name']; // ## filename only
-		$newArray ['path'] = rtrim ( $oldvalue ['path'], '/' ); // ## path (may or may not have trailing slash!)
-		
-		$newArray ['modified'] = true; // ## must set
-		return $newArray; // ## TRIPPLE check that this array always! returns valid path + name info
-	}
-	
-	// ## example: changes redirection address based on user input field
-	
-	if ($setting == "redirection") {
-		
-		// ## note: '$$$mypick' references the ID of the HTML element and has been assigned
-		// ## to the drop down field in the form configuration, with [id:mypick] !
-		
-		$userfield = $cformsdata ['data'] [$cformsdata ['data'] ['$$$mypick']];
-		
-		if ($userfield == 'abc')
-			return 'http://my.new.url.example';
-		
-		if ($userfield == 'def')
-			return 'http://my.other.url.example';
-	}
-	
 	return $oldvalue;
-}
-
-// ##
-// ##
-// ## Your custom user data input filter
-// ## @deprecated
-// ##
-function my_cforms_filter($formIDOrPostData) {
-	global $track;
-	
-	// ## $track stores all user input
-	// ## Note: $formID = '' (empty) for the first form!
-	
-	// ## triggers on your third form
-	if ($formIDOrPostData == '3') {
-		
-		// ## Do something with the data or not, up to you
-		$track ['Your Name'] = 'Mr./Mrs. ' . $track ['Your Name'];
-		
-		// ## Send to 3d party or do something else
-		wp_mail ( 'you@example.com', 'cforms my_filter test', print_r ( $track, 1 ), 'From: you@example.com' );
-	}	
-
-	// ## triggers on your third form before any cforms processing
-	elseif (isset ( $formIDOrPostData ['sendbutton3'] )) {
-		
-		// ## do something with field name 'cf3_field_3'
-		// ## (! check you HTML source to properly reference your form fields !)
-		$formIDOrPostData ['cf3_field_3'] = 'Mr./Mrs. ' . $formIDOrPostData ['cf3_field_3'];
-		
-		// ## perhaps send an email or do something different
-		wp_mail ( 'you@example.com', 'cforms my_filter_nonAjax test', 'Form data array (nonAjax):' . print_r ( $formIDOrPostData, 1 ), 'From: you@example.com' );
-	}
-}
-
-// ##
-// ##
-// ## Your custom user data input filter
-// ## @deprecated
-// ##
-function my_cforms_ajax_filter($formID) {
-	
-	// ## See my_cforms_filter
 }
 
 /**
@@ -275,7 +110,7 @@ function compute_quote($cformsdata) {
 	
 	//extra charges
 	$extra_peeps = getExtraPeeps($cformsdata['data']);
-	$extra_charge = $extra_peeps * $hotel_options['extra_charge'];
+	$extra_charge = $extra_peeps * $hotel_options[$form['h_id']]['extra_charge'];
 	$total_quote += $extra_charge;
 
 	//computing total before tax
@@ -288,7 +123,7 @@ function compute_quote($cformsdata) {
 	$room_data['tax_10'] = $total_quote * 0.10;
 	$room_data['tax_12'] = $total_quote * 0.12;
 	$room_data['extra_peeps'] = $extra_peeps;
-	$room_data['extra_charge_rate'] = $hotel_options['extra_charge'];
+	$room_data['extra_charge_rate'] = $hotel_options[$form['h_id']]['extra_charge'];
 	$room_data['tot_extra_charge'] = $extra_charge;
 	
 	//adding tax
@@ -425,7 +260,7 @@ function getMaxCapacity($data){
 	$roomrates = $db_roomrates->getRatesArray();
 	
 	$max = 0;
-	$default_cap = $hotel_options['default_capacity'];
+	$default_cap = $hotel_options[$data['h_id']]['default_capacity'];
 	
 	foreach ( $rooms as $r ) {
 		if (isset ( $data ['room-' . $r->id] ) && ($data ['room-' . $r->id] > 0)) {
@@ -453,7 +288,7 @@ function getTotalMinCapacity($form){
 	$roomrates = $db_roomrates->getRatesArray();
 	
 	$min = 0;
-	$default_cap = $hotel_options['default_capacity'];
+	$default_cap = $hotel_options[$form['h_id']]['default_capacity'];
 	
 	foreach ( $rooms as $r ) {
 		if (isset ( $form ['$$$room-' . $r->id] ) && ($form [$form ['$$$room-' . $r->id]] > 0)) {

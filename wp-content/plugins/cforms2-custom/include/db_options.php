@@ -14,7 +14,7 @@ class DB_Options {
 		$data = array();
 		$all = self::getAll();
 		foreach($all as $r){
-			$data[$r->name] = $r->value;
+			$data[$r->hotel_id][$r->name] = $r->value;
 		}
 		return $data;
 	}
