@@ -30,6 +30,17 @@ $currency = "Php ";
 		<td><?php echo $currency . number_format( $r['total_price'], 2, '.', ',' ); ?></td>
 	</tr>
 	<?php }	?>
+	<?php if ($room_data['extra_peeps'] > 0) {?>
+	<tr>
+		<td colspan="4"><b>Extra Charges</b></td>
+	</tr>
+	<tr>
+		<td>Additional Guests (with breakfast)</td>
+		<td><?php echo $room_data['extra_peeps']; ?></td>
+		<td><?php echo $currency . number_format( $room_data['extra_charge_rate'], 2, '.', ',' ); ?></td>
+		<td><?php echo $currency . number_format( $room_data['tot_extra_charge'], 2, '.', ',' ); ?></td>
+	</tr>
+	<?php }?>
 	<tr>
 		<td colspan="3"><b>Sub Total</b></td>
 		<td><b><?php echo $currency . number_format( $room_data['total_wo_days'], 2, '.', ',' ); ?></b></td>

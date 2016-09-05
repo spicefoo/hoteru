@@ -36,6 +36,7 @@
 // ##
 require_once (plugin_dir_path ( __FILE__ ) . 'include/db_rooms.php');
 require_once (plugin_dir_path ( __FILE__ ) . 'include/db_roomrates.php');
+require_once (plugin_dir_path ( __FILE__ ) . 'include/db_options.php');
 require_once (plugin_dir_path(__FILE__) . 'include/lib_custommsgs.php');
 
 function my_cforms_logic($cformsdata, $oldvalue, $setting) {
@@ -238,7 +239,7 @@ function add_tax($val, $percentage){
  *
  */
 function compute_quote($cformsdata) {
-	global $wpdb, $cformsSettings;
+	global $wpdb, $cformsSettings, $hotel_options;
 	$formID = $cformsdata ['id'];
 	$form = $cformsdata ['data'];
 	
@@ -260,7 +261,6 @@ function compute_quote($cformsdata) {
 			$units = $form [$form ['$$$room-' . $r->id]];
 			$total_price = $units * $roomrates[$r->id];
 			
-			
 			//for the display
 			$room_data['rooms'][$r->id] = array(
 				'name' => $r->name,
@@ -272,6 +272,11 @@ function compute_quote($cformsdata) {
 			$total_quote += $total_price;
 		}
 	}
+	
+	//extra charges
+	$extra_peeps = getExtraPeeps($cformsdata['data']);
+	$extra_charge = $extra_peeps * $hotel_options['extra_charge'];
+	$total_quote += $extra_charge;
 
 	//computing total before tax
 	$room_data['total_wo_days'] = $total_quote;
@@ -282,6 +287,9 @@ function compute_quote($cformsdata) {
 	$room_data['total_wo_tax'] = $total_quote;
 	$room_data['tax_10'] = $total_quote * 0.10;
 	$room_data['tax_12'] = $total_quote * 0.12;
+	$room_data['extra_peeps'] = $extra_peeps;
+	$room_data['extra_charge_rate'] = $hotel_options['extra_charge'];
+	$room_data['tot_extra_charge'] = $extra_charge;
 	
 	//adding tax
 	$total_quote += $room_data['tax_10'] + $room_data['tax_12']; 
@@ -387,9 +395,17 @@ function my_cforms_validations($postdata){
 	}
 }
 
-#@TODO
-function validDateInterval($data){
-	return true;
+function validDateInterval($form){
+	//check if check in date has passed
+	$from_today = date_diff ( date_create($form['check_in']), date_create(date("m/d/Y")));
+	if (empty($from_today->format ( '%r' ))) return false;
+	
+	$date_diff = date_diff ( date_create($form['check_in']), date_create($form['check_out'] ));
+	$total_days = (int) $date_diff->format ( '%a' );
+	if($total_days <= 0) return false;
+	
+	$total_days = $date_diff->format ( '%r' );
+	return empty($total_days);
 }
 
 function guestsFit($data){
@@ -400,6 +416,8 @@ function guestsFit($data){
 }
 
 function getMaxCapacity($data){
+	global $hotel_options;
+	
 	$db_rooms = new DB_Rooms ();
 	$rooms = $db_rooms->getAll ();
 	
@@ -407,7 +425,7 @@ function getMaxCapacity($data){
 	$roomrates = $db_roomrates->getRatesArray();
 	
 	$max = 0;
-	$default_cap = 2;
+	$default_cap = $hotel_options['default_capacity'];
 	
 	foreach ( $rooms as $r ) {
 		if (isset ( $data ['room-' . $r->id] ) && ($data ['room-' . $r->id] > 0)) {
@@ -419,10 +437,32 @@ function getMaxCapacity($data){
 	return $max;
 }
 
-function getExtraPeeps($data){
-	$max = getMaxCapacity($data);
+function getExtraPeeps($form){
+	$n = $form [ $form ['$$$num_guests']];
+	$min = getTotalMinCapacity($form);
+	return (int) $n - $min;
 }
 
+function getTotalMinCapacity($form){
+	global $hotel_options;
+	
+	$db_rooms = new DB_Rooms ();
+	$rooms = $db_rooms->getAll ();
+	
+	$db_roomrates = new DB_RoomRates ();
+	$roomrates = $db_roomrates->getRatesArray();
+	
+	$min = 0;
+	$default_cap = $hotel_options['default_capacity'];
+	
+	foreach ( $rooms as $r ) {
+		if (isset ( $form ['$$$room-' . $r->id] ) && ($form [$form ['$$$room-' . $r->id]] > 0)) {
+			$min += ($form [$form ['$$$room-' . $r->id]]  * ($default_cap));
+		}
+	}
+	
+	return $min;
+}
 
 /**
  * Add all the custom actions needed
