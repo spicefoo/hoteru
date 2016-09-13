@@ -150,10 +150,16 @@ function sendto_vtiger($cformsdata){
 	$form['quote'] = strip_tags(compute_quote($cformsdata));
 	$post_data = format_postdata($form);
 	
-	// post url and vtiger webform publicid
-	$post_url = $cformsSettings['form'.$formID]['cforms'.$formID.'_action_page'];
-	$post_data['publicid'] = $cformsSettings['form'.$formID]['cforms'.$formID.'_redirect_page'];
-
+	//separate the post url and publicid of vtiger
+	$matches = NULL;
+	$action_page = $cformsSettings['form'.$formID]['cforms'.$formID.'_action_page'];
+	if(preg_match('/^(.*)\?publicid=(.{32})/', $action_page, $matches) && isset($matches[1])){ 
+		$post_url = $matches[1];
+		$post_data['publicid'] = $matches[2];
+	}else{
+		die("Public id cannot be seen.");
+	}
+	
 	return sendto_curl($post_url, $post_data);
 }
 
@@ -231,11 +237,18 @@ function my_cforms_validations($postdata){
 }
 
 function validDateInterval($form){
+	$check_in = date_create($form['check_in']);
+	$check_out = date_create($form['check_out']);
+	$today = date_create(date("m/d/Y"));
+	
+	//check if valid date format
+	if(!$check_in || !$check_out) return false;
+	
 	//check if check in date has passed
-	$from_today = date_diff ( date_create($form['check_in']), date_create(date("m/d/Y")));
+	$from_today = date_diff ($check_in, $today);
 	if (empty($from_today->format ( '%r' ))) return false;
 	
-	$date_diff = date_diff ( date_create($form['check_in']), date_create($form['check_out'] ));
+	$date_diff = date_diff ($check_in, $check_out);
 	$total_days = (int) $date_diff->format ( '%a' );
 	if($total_days <= 0) return false;
 	
