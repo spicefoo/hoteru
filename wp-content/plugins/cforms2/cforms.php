@@ -593,7 +593,13 @@ function cforms2($args = '',$no = '') {
 				break;
 
 			case "textonly":
-				$field .= '<li'.$liID.' class="textonly' . (($defaultvalue<>'')?' '.$defaultvalue:'') . '"' . (($reg_exp<>'')?' style="'.$reg_exp.'" ':'') . '>' . stripslashes(($field_name)) . '</li>';
+				if ( function_exists('my_cforms_logic') ){ //@angge: added feature for custom cforms to replace plain textonly fields with custom html
+					$customText = my_cforms_logic(array('id'=>$no, 'data'=>$trackf), $field_name,'textonly');
+					$field .= '<li'.$liID.' class="textonly' . (($defaultvalue<>'')?' '.$defaultvalue:'') . '"' . (($reg_exp<>'')?' style="'.$reg_exp.'" ':'') . '>' . $customText . '</li>';
+					
+				}else{
+					$field .= '<li'.$liID.' class="textonly' . (($defaultvalue<>'')?' '.$defaultvalue:'') . '"' . (($reg_exp<>'')?' style="'.$reg_exp.'" ':'') . '>' . stripslashes(($field_name)) . '</li>';
+				}
 				break;
 
 			case "fieldsetstart":

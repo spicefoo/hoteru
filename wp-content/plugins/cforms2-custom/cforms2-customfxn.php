@@ -15,7 +15,7 @@
 // ## 3) remove the functions you do not need and customize the needed ones
 // ## 4) activate this plugin
 
-// ##
+/*
 // ## Your custom application logic features
 // ##
 // ## "successMessage" $cformsdata = cforms datablock
@@ -32,37 +32,74 @@
 // ## "autoConfHTML" $cformsdata = cforms datablock
 // ## "adminEmailSUBJ" $cformsdata = cforms datablock
 // ## "autoConfSUBJ" $cformsdata = cforms datablock
+// ##
+// ## "textonly" $cformsdata = html code of the form (author: angge)
+ * 		When field is a textonly field, added a functionality where you can 
+ * 		replace it with whatever html code you want
 // ## @deprecated
 // ##
+ */
 require_once (plugin_dir_path ( __FILE__ ) . 'include/db_rooms.php');
 require_once (plugin_dir_path ( __FILE__ ) . 'include/db_roomrates.php');
 require_once (plugin_dir_path ( __FILE__ ) . 'include/db_options.php');
 require_once (plugin_dir_path(__FILE__) . 'include/lib_custommsgs.php');
 
 function my_cforms_logic($cformsdata, $oldvalue, $setting) {
-	
 	// ## If you're unsure how to reference $cformsdata use the below mail call to send you the data array
 	// ## wp_mail('you@example.com', 'my_cforms_logic test', print_r($cformsdata,1), 'From: you@example.com');
 	
-	if ($setting == "successMessage" && $oldvalue != '') {
-		
+	if (  $setting == "autoConfTXT" || $setting == "autoConfHTML" ){
+		if(isset($cformsdata['data']['cf_form'.$cformsdata['id'].'_quote_email'])){
+			if(!getFromSession($cformsdata['id'], 'quote')) return $oldvalue;
+			
+			$quote = getFromSession($cformsdata['id'], 'quote');
+			
+			unsetCustomSession(); //cleanup session
+			if($setting == "autoConfHTML"){
+				return str_replace('{quote}', $quote, $oldvalue);
+			}else{
+				return str_replace('{quote}', strip_tags($quote), $oldvalue);
+			}
+		}
+	}
+	
+	if( $setting == 'textonly' && $oldvalue != '' ){
 		//if form has compu field, it means the form has data to be computed and a quotation to show
-		if(form_is_compu($cformsdata['data'])){
-			return compute_quote($cformsdata);
+		if($oldvalue == 'quote'){
+			
+			if(getFromSession($cformsdata['id'], 'quote')) return getFromSession($cformsdata['id'], 'quote');
+			
+			if(form_is_compu($cformsdata['data'])){
+				$quote = compute_quote($cformsdata['data']);
+				addToSession($cformsdata['id'], 'quote', $quote);
+				return $quote;
+			}
 		}
 	}
 	
 	return $oldvalue;
 }
 
-/**
- * Your custom user data action routine
- * gets triggered just before sending the admin email
- */
+function addToSession($formid, $key, $val){
+	if(session_id()){ //wp session
+		$_SESSION['cforms-custom'][$formid][$key] = $val;
+	}
+}
+
+function getFromSession($formid, $key){
+	if(session_id()){ //wp session
+		return $_SESSION['cforms-custom'][$formid][$key];
+	}
+	return NULL;
+}
+
+function unsetCustomSession(){
+	unset($_SESSION['cforms-custom']);
+}
 
 function form_is_compu($cformsdata){
 	//check first if this form is for compu, if none, then there's no need to run further
-	return isset($cformsdata['compu']);
+	return isset($cformsdata['data']['compu']);
 }
 
 function add_tax($val, $percentage){
@@ -144,11 +181,7 @@ function sendto_vtiger($cformsdata){
 	$formID = $cformsdata ['id'];
 	$form = $cformsdata ['data'];
 	
-	if(!isset($form['crm']) || !isValidURL($cformsSettings['form'.$formID]['cforms'.$formID.'_action_page']) || !isValidPublicid($cformsSettings['form'.$formID]['cforms'.$formID.'_redirect_page'])) return;
-	
-	//prep data
-	$form['quote'] = strip_tags(compute_quote($cformsdata));
-	$post_data = format_postdata($form);
+	if(!isset($form['crm'])) return;
 	
 	//separate the post url and publicid of vtiger
 	$matches = NULL;
@@ -159,6 +192,10 @@ function sendto_vtiger($cformsdata){
 	}else{
 		die("Public id cannot be seen.");
 	}
+	
+	//prep data
+	$form['quote'] = strip_tags(compute_quote($cformsdata));
+	$post_data = format_postdata($form);
 	
 	return sendto_curl($post_url, $post_data);
 }
@@ -186,16 +223,6 @@ function sendto_curl($url, $data){
 	curl_close($curl);
 	
 	return json_decode($json_response, true);
-}
-
-# @TODO
-function isValidURL($url){
-	return true;
-}
-
-# @TODO
-function isValidPublicid($id){
-	return true;
 }
 
 function format_postdata($data){
