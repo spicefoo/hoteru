@@ -183,19 +183,19 @@ function sendto_vtiger($cformsdata){
 	
 	if(!isset($form['crm'])) return;
 	
+	//prep data
+	$form['quote'] = strip_tags(compute_quote($cformsdata));
+	$post_data = format_postdata($form);
+	
 	//separate the post url and publicid of vtiger
 	$matches = NULL;
 	$action_page = $cformsSettings['form'.$formID]['cforms'.$formID.'_action_page'];
-	if(preg_match('/^(.*)\?publicid=(.{32})/', $action_page, $matches) && isset($matches[1])){ 
+	if(preg_match('/^(.*)\?publicid=(.{32})/', $action_page, $matches) && isset($matches[1])){
 		$post_url = $matches[1];
 		$post_data['publicid'] = $matches[2];
 	}else{
 		die("Public id cannot be seen.");
 	}
-	
-	//prep data
-	$form['quote'] = strip_tags(compute_quote($cformsdata));
-	$post_data = format_postdata($form);
 	
 	return sendto_curl($post_url, $post_data);
 }
@@ -216,9 +216,14 @@ function sendto_curl($url, $data){
 	$status = curl_getinfo($curl, CURLINFO_HTTP_CODE);
 	
 	if ( $status != 200 ) {
+		
 		die("Error: call to URL $url failed with status $status, response $json_response, curl_error " . curl_error($curl) . ", curl_errno " . curl_errno($curl));
 	}
 	
+	$response = json_decode($json_response);
+	if(!$response->success){
+		die("Error: " . $response->error->message);
+	}
 	
 	curl_close($curl);
 	
