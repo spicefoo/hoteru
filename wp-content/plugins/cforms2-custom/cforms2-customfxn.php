@@ -67,12 +67,17 @@ function my_cforms_logic($cformsdata, $oldvalue, $setting) {
 		//replace confirm_request_url placeholder
 		$oldvalue = str_replace('{confirm_request_url}', 'URL here', $oldvalue);
 		
-		//send multiple emails through autoConf 
-		// NOTE: make sure that when this runs, there are no other special {} pairs left to be processed since it uses {} in regex. 
-		$oldvalue = processAddtnlEmails($oldvalue);
-		
 		return $oldvalue;
 		
+	}
+	
+	if (  $setting == "adtnlEmailHTML" || $setting == "adtnlEmailTXT" ){
+		//send multiple emails through autoConf
+		// NOTE: make sure that when this runs, there are no other special {} pairs left to be processed since it uses {} in regex.
+		$html_show_ac = substr($cformsSettings['form'.$no]['cforms'.$no.'_formdata'],3,1)=='1';
+		$oldvalue = processAdtnlEmails($oldvalue, $html_show_ac);
+		
+		return $oldvalue;
 	}
 	
 	if( $setting == 'textonly' && $oldvalue != '' ){
@@ -376,7 +381,7 @@ function getExtraPeeps($form){
  * Processing Additional Emails when the autoConf is enabled.
  * @param string $input_lines
  */
-function processAddtnlEmails($input_lines){
+function processAdtnlEmails($input_lines){
 	$pattern = "/{{([^}]*)}}/";
 	if(preg_match_all($pattern, $input_lines, $matches)){
 		foreach($matches[1] as $e){

@@ -946,19 +946,19 @@ if( isset($_POST['sendbutton'.$no]) && $all_valid ) {
 
 	                ###  actual user message
 	                $cmsg = stripslashes($cformsSettings['form'.$no]['cforms'.$no.'_cmsg']);
+	                if ( function_exists('my_cforms_logic') )
+	                    $cmsg = my_cforms_logic($trackf, $cmsg,'autoConfTXT');
 	                $cmsg = cforms2_check_default_vars($cmsg,$no);
 	                $cmsg = cforms2_check_cust_vars($cmsg,$track);
-	                if ( function_exists('my_cforms_logic') )
-	                	$cmsg = my_cforms_logic($trackf, $cmsg,'autoConfTXT'); //switched because we need the replaced values passed to the custom function
 
 	                ###  HTML text
 					$cmsghtml='';
 					if( substr($cformsSettings['form'.$no]['cforms'.$no.'_formdata'],3,1)=='1' ){
 	                    $cmsghtml = stripslashes($cformsSettings['form'.$no]['cforms'.$no.'_cmsg_html']);
+	                    if ( function_exists('my_cforms_logic') )
+	                        $cmsghtml = my_cforms_logic($trackf, $cmsghtml,'autoConfHTML');
 	                    $cmsghtml = cforms2_check_default_vars($cmsghtml,$no);
 	                    $cmsghtml =	cforms2_check_cust_vars($cmsghtml,$track,true);
-	                    if ( function_exists('my_cforms_logic') )
-	                    	$cmsghtml = my_cforms_logic($trackf, $cmsghtml,'autoConfHTML'); //switched because we need the replaced values passed to the custom function
                     }
 
                     ### subject
@@ -982,6 +982,15 @@ if( isset($_POST['sendbutton'.$no]) && $all_valid ) {
 	                $a = (substr($a,0,1)=='/') ? $a : plugin_dir_path(__FILE__).$a;
 	                if ( $a<>'' && file_exists( $a ) ) {
 	                    $mail->add_file($a); ### optional name
+                    }
+                    
+                    ### handle multiple emails in autoConf field
+                    if($mail->html_show_ac){
+                    	if ( function_exists('my_cforms_logic') )
+	                        $cmsghtml = my_cforms_logic($trackf, $cmsghtml,'adtnlEmailHTML');
+                    }else{
+                    	if ( function_exists('my_cforms_logic') )
+                    		$cmsg = my_cforms_logic($trackf, $cmsg,'adtnlEmailTXT');
                     }
 
                     ### CC or auto conf?
