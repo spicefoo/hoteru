@@ -45,22 +45,34 @@ require_once (plugin_dir_path ( __FILE__ ) . 'include/db_options.php');
 require_once (plugin_dir_path(__FILE__) . 'include/lib_custommsgs.php');
 
 function my_cforms_logic($cformsdata, $oldvalue, $setting) {
-	// ## If you're unsure how to reference $cformsdata use the below mail call to send you the data array
-	// ## wp_mail('you@example.com', 'my_cforms_logic test', print_r($cformsdata,1), 'From: you@example.com');
-	
 	if (  $setting == "autoConfTXT" || $setting == "autoConfHTML" ){
+		
+		//replace {quote} placeholder with the actual quotations if the quote_email flag is set in the form fields
 		if(isset($cformsdata['data']['cf_form'.$cformsdata['id'].'_quote_email'])){
 			if(!getFromSession($cformsdata['id'], 'quote')) return $oldvalue;
 			
 			$quote = getFromSession($cformsdata['id'], 'quote');
 			
-			unsetCustomSession(); //cleanup session
+			//unsetCustomSession(); //cleanup session
 			if($setting == "autoConfHTML"){
-				return str_replace('{quote}', $quote, $oldvalue);
+				$oldvalue = str_replace('{quote}', $quote, $oldvalue);
 			}else{
-				return str_replace('{quote}', strip_tags($quote), $oldvalue);
+				$oldvalue = str_replace('{quote}', strip_tags($quote), $oldvalue);
 			}
 		}
+		
+		//replace room_request placeholder
+		$oldvalue = str_replace('{room_request}', 'Room request here', $oldvalue);
+		
+		//replace confirm_request_url placeholder
+		$oldvalue = str_replace('{confirm_request_url}', 'URL here', $oldvalue);
+		
+		//send multiple emails through autoConf 
+		// NOTE: make sure that when this runs, there are no other special {} pairs left to be processed since it uses {} in regex. 
+		$oldvalue = processAddtnlEmails($oldvalue);
+		
+		return $oldvalue;
+		
 	}
 	
 	if( $setting == 'textonly' && $oldvalue != '' ){
@@ -80,6 +92,11 @@ function my_cforms_logic($cformsdata, $oldvalue, $setting) {
 	return $oldvalue;
 }
 
+
+/**
+ * Session functions for implementing custom session vars
+ * addToSession, getFromSession, unsetCustomSession
+ */
 function addToSession($formid, $key, $val){
 	if(session_id()){ //wp session
 		$_SESSION['cforms-custom'][$formid][$key] = $val;
@@ -97,18 +114,10 @@ function unsetCustomSession(){
 	unset($_SESSION['cforms-custom']);
 }
 
-function form_is_compu($cformsdata){
-	//check first if this form is for compu, if none, then there's no need to run further
-	return isset($cformsdata['data']['compu']);
-}
 
-function add_tax($val, $percentage){
-	return $val + ($val * $percentage);
-}
-
-/*
+/**
  * Computes the quotation of the reservation accdg to the submitted data and form values.
- *
+ * @param array $cformsdata
  */
 function compute_quote($cformsdata) {
 	global $wpdb, $cformsSettings, $hotel_options;
@@ -175,6 +184,16 @@ function compute_quote($cformsdata) {
 	return ob_get_clean();
 }
 
+function form_is_compu($cformsdata){
+	//check first if this form is for compu, if none, then there's no need to run further
+	return isset($cformsdata['data']['compu']);
+}
+
+/**
+ * Sends form data to vtiger
+ * For this to be triggered, the "crm" field must be included in the form.
+ * @param array $cformsdata
+ */
 function sendto_vtiger($cformsdata){
 	global $cformsSettings;
 	//check first if this form is for crm, if none, then there's no need to run further
@@ -230,10 +249,14 @@ function sendto_curl($url, $data){
 	return json_decode($json_response, true);
 }
 
+/**
+ * sigh cform's form data format
+ * to get the value of a specific field, we need to get the field name first using the pattern $$$<field_id>
+ * then get the actual field value by using the field name
+ * @param array $data
+ * @return multitype:array
+ */
 function format_postdata($data){
-	//sigh cform's form data format
-	// to get the value of a specific field, we need to get the field name first using the pattern $$$<field_id>
-	// then get the actual field value by using the field name
 	$post_data = array();
 	foreach($data as $k => $v){
 		$matches = NULL;
@@ -245,6 +268,11 @@ function format_postdata($data){
 	return $post_data;
 }
 
+/**
+ * Custom validation functions for "compu" forms.
+ * @param array $postdata
+ * @return void|array
+ */
 function my_cforms_validations($postdata){
 	global $cformsSettings, $err_msgs;
 	
@@ -288,13 +316,6 @@ function validDateInterval($form){
 	return empty($total_days);
 }
 
-function guestsFit($data){
-	$n = $data['num_guests'];
-	$max = getMaxCapacity($data);
-	
-	return $max >= $n;
-}
-
 function getMaxCapacity($data){
 	global $hotel_options;
 	
@@ -317,12 +338,6 @@ function getMaxCapacity($data){
 	return $max;
 }
 
-function getExtraPeeps($form){
-	$n = $form [ $form ['$$$num_guests']];
-	$min = getTotalMinCapacity($form);
-	return (int) $n - $min;
-}
-
 function getTotalMinCapacity($form){
 	global $hotel_options;
 	
@@ -343,6 +358,56 @@ function getTotalMinCapacity($form){
 	
 	return $min;
 }
+
+function guestsFit($data){
+	$n = $data['num_guests'];
+	$max = getMaxCapacity($data);
+
+	return $max >= $n;
+}
+
+function getExtraPeeps($form){
+	$n = $form [ $form ['$$$num_guests']];
+	$min = getTotalMinCapacity($form);
+	return (int) $n - $min;
+}
+
+/**
+ * Processing Additional Emails when the autoConf is enabled.
+ * @param string $input_lines
+ */
+function processAddtnlEmails($input_lines){
+	$pattern = "/{{([^}]*)}}/";
+	if(preg_match_all($pattern, $input_lines, $matches)){
+		foreach($matches[1] as $e){
+			$e = trim($e);
+				
+			preg_match("/>>from:((.| )*+)/i", $e, $from);
+			$from = isset($from[1]) ? 'From: '.cleanString($from[1]) : '';
+				
+			preg_match("/>>to:((.| )*+)/i", $e, $to);
+			$to = isset($to[1]) ? cleanString($to[1]) : '';
+				
+			preg_match("/>>subj:((.| )*+)/i", $e, $subj);
+			$subj = isset($subj[1]) ? cleanString($subj[1]) : '';
+				
+			//echo $e;
+			preg_match_all("/>>msg:((.|\s)*+)/i", $e, $msg);
+			$msg = isset($msg[1][0]) ? $msg[1][0] : '';
+				
+			$mail_stat = wp_mail($to, $subj, $msg, $from);
+			
+			if(!$mail_stat) die("Error with sending additional emails");
+		}
+	}
+
+	return trim(preg_replace($pattern, "", $input_lines));
+}
+
+function cleanString($string){
+	return stripslashes(trim($string));
+}
+
 
 /**
  * Add all the custom actions needed
