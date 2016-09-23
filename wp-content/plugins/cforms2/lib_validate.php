@@ -763,6 +763,7 @@ if( isset($_POST['sendbutton'.$no]) && $all_valid ) {
 	###
 	global $subID, $wpdb;
 	$subID = cforms2_write_tracking_record($no,$field_email,$track);
+	if($subID > 0) $_SESSION['cforms-custom'][$no]['subID'] = $subID; //add last insert id to session for custom fxn
 
 	if ( !($to_one<>-1 && $to<>'') ){
 		$to = $replyto = preg_replace( array('/;|#|\|/'), array(','), stripslashes($cformsSettings['form'.$no]['cforms'.$no.'_email']) );
@@ -946,19 +947,19 @@ if( isset($_POST['sendbutton'.$no]) && $all_valid ) {
 
 	                ###  actual user message
 	                $cmsg = stripslashes($cformsSettings['form'.$no]['cforms'.$no.'_cmsg']);
-	                if ( function_exists('my_cforms_logic') )
-	                    $cmsg = my_cforms_logic($trackf, $cmsg,'autoConfTXT');
 	                $cmsg = cforms2_check_default_vars($cmsg,$no);
 	                $cmsg = cforms2_check_cust_vars($cmsg,$track);
+	                if ( function_exists('my_cforms_logic') )
+	                	$cmsg = my_cforms_logic($trackf, $cmsg,'autoConfTXT');
 
 	                ###  HTML text
 					$cmsghtml='';
 					if( substr($cformsSettings['form'.$no]['cforms'.$no.'_formdata'],3,1)=='1' ){
 	                    $cmsghtml = stripslashes($cformsSettings['form'.$no]['cforms'.$no.'_cmsg_html']);
-	                    if ( function_exists('my_cforms_logic') )
-	                        $cmsghtml = my_cforms_logic($trackf, $cmsghtml,'autoConfHTML');
 	                    $cmsghtml = cforms2_check_default_vars($cmsghtml,$no);
 	                    $cmsghtml =	cforms2_check_cust_vars($cmsghtml,$track,true);
+	                    if ( function_exists('my_cforms_logic') )
+	                    	$cmsghtml = my_cforms_logic($trackf, $cmsghtml,'autoConfHTML');
                     }
 
                     ### subject
@@ -988,6 +989,7 @@ if( isset($_POST['sendbutton'.$no]) && $all_valid ) {
                     if($mail->html_show_ac){
                     	if ( function_exists('my_cforms_logic') )
 	                        $cmsghtml = my_cforms_logic($trackf, $cmsghtml,'adtnlEmailHTML');
+	                        $cmsg = my_cforms_logic($trackf, $cmsg,'cleanAdtnlEmails');
                     }else{
                     	if ( function_exists('my_cforms_logic') )
                     		$cmsg = my_cforms_logic($trackf, $cmsg,'adtnlEmailTXT');

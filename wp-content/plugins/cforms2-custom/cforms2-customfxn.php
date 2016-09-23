@@ -42,11 +42,11 @@
 require_once (plugin_dir_path ( __FILE__ ) . 'include/db_rooms.php');
 require_once (plugin_dir_path ( __FILE__ ) . 'include/db_roomrates.php');
 require_once (plugin_dir_path ( __FILE__ ) . 'include/db_options.php');
-require_once (plugin_dir_path(__FILE__) . 'include/lib_custommsgs.php');
+require_once (plugin_dir_path ( __FILE__ ) . 'include/db_cformssubmissions.php');
 
 function my_cforms_logic($cformsdata, $oldvalue, $setting) {
+	global $cformsSettings;
 	if (  $setting == "autoConfTXT" || $setting == "autoConfHTML" ){
-		
 		//replace {quote} placeholder with the actual quotations if the quote_email flag is set in the form fields
 		if(isset($cformsdata['data']['cf_form'.$cformsdata['id'].'_quote_email'])){
 			if(!getFromSession($cformsdata['id'], 'quote')) return $oldvalue;
@@ -59,25 +59,28 @@ function my_cforms_logic($cformsdata, $oldvalue, $setting) {
 			}else{
 				$oldvalue = str_replace('{quote}', strip_tags($quote), $oldvalue);
 			}
+			
+			//replace room_request placeholder
+			$oldvalue = str_replace('{room_request}', 'Room request here', $oldvalue);
+			
+			//replace confirm_request_url placeholder
+			$oldvalue = str_replace('{confirm_request_url}', genConfirmURL(getFromSession($cformsdata['id'], 'subID')), $oldvalue);
 		}
 		
-		//replace room_request placeholder
-		$oldvalue = str_replace('{room_request}', 'Room request here', $oldvalue);
-		
-		//replace confirm_request_url placeholder
-		$oldvalue = str_replace('{confirm_request_url}', 'URL here', $oldvalue);
-		
 		return $oldvalue;
-		
 	}
 	
 	if (  $setting == "adtnlEmailHTML" || $setting == "adtnlEmailTXT" ){
 		//send multiple emails through autoConf
 		// NOTE: make sure that when this runs, there are no other special {} pairs left to be processed since it uses {} in regex.
-		$html_show_ac = substr($cformsSettings['form'.$no]['cforms'.$no.'_formdata'],3,1)=='1';
+		$html_show_ac = substr($cformsSettings['form'.$cformsdata['id']]['cforms'.$cformsdata['id'].'_formdata'],3,1)=='1';
 		$oldvalue = processAdtnlEmails($oldvalue, $html_show_ac);
 		
 		return $oldvalue;
+	}
+	
+	if (  $setting == "cleanAdtnlEmails" ){
+		return cleanAdtnlEmails($oldvalue);
 	}
 	
 	if( $setting == 'textonly' && $oldvalue != '' ){
@@ -95,6 +98,15 @@ function my_cforms_logic($cformsdata, $oldvalue, $setting) {
 	}
 	
 	return $oldvalue;
+}
+
+
+function genConfirmURL($subID){
+	$db = new DB_CformsSubmissions();
+	$data = $db->get($subID);
+	$tracking_id = str_pad($data->form_id, 2, '0', STR_PAD_LEFT) . date_format(date_create($data->sub_date), 'U') . $data->id; //when form id exceeds 99, change padding to 3 digits
+	
+	return "RESERVATION CODE: " . $tracking_id;
 }
 
 
@@ -381,7 +393,8 @@ function getExtraPeeps($form){
  * Processing Additional Emails when the autoConf is enabled.
  * @param string $input_lines
  */
-function processAdtnlEmails($input_lines){
+function processAdtnlEmails($input_lines, $isHtml){
+	if($isHtml) $headers[] = 'Content-Type: text/html; charset=UTF-8';
 	$pattern = "/{{([^}]*)}}/";
 	if(preg_match_all($pattern, $input_lines, $matches)){
 		foreach($matches[1] as $e){
@@ -389,6 +402,7 @@ function processAdtnlEmails($input_lines){
 				
 			preg_match("/>>from:((.| )*+)/i", $e, $from);
 			$from = isset($from[1]) ? 'From: '.cleanString($from[1]) : '';
+			if($from) $headers[] = $from;
 				
 			preg_match("/>>to:((.| )*+)/i", $e, $to);
 			$to = isset($to[1]) ? cleanString($to[1]) : '';
@@ -399,13 +413,20 @@ function processAdtnlEmails($input_lines){
 			//echo $e;
 			preg_match_all("/>>msg:((.|\s)*+)/i", $e, $msg);
 			$msg = isset($msg[1][0]) ? $msg[1][0] : '';
+			
 				
-			$mail_stat = wp_mail($to, $subj, $msg, $from);
+			$mail_stat = wp_mail($to, $subj, $msg, $headers);
+
 			
 			if(!$mail_stat) die("Error with sending additional emails");
 		}
 	}
 
+	return cleanAdtnlEmails($input_lines);
+}
+
+function cleanAdtnlEmails($input_lines){
+	$pattern = "/{{([^}]*)}}/";
 	return trim(preg_replace($pattern, "", $input_lines));
 }
 
