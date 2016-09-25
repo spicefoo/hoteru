@@ -97,10 +97,12 @@ function cforms2_write_tracking_record($no,$field_email,$track){
 			$sql='';
 			$dosave=false;
             foreach ( $track as $k => $v ){
-
+            	
                 ### clean up keys
-                if ( preg_match('/\$\$\$/',$k) ) continue;
-
+                if ( preg_match('/\$\$\$\d+/',$k) ) continue; //@angge: changed because we want to capture the custom field ids
+                
+                if ( preg_match('/\$\$\$/',$k) ) $k = str_replace('$$$', '', $k); //@angge: saves custom field ids
+                
 	            if ( strpos($k, 'cf_form') !== false && preg_match('/^cf_form\d*_(.+)/',$k, $r) )
 	                $k = $r[1];
 
@@ -111,6 +113,7 @@ function cforms2_write_tracking_record($no,$field_email,$track){
                 $sql .= $wpdb->prepare("('-XXX-',%s,%s),", $k, $v);
                	$dosave=true;
             }
+            
             if( !$dosave ) return;
 
 			### good to go:
@@ -939,10 +942,13 @@ if( isset($_POST['sendbutton'.$no]) && $all_valid ) {
 				if (isset($trackf['data'][$ccme]))
 					cforms2_dbg("is CC: = $ccme, active = {$trackf['data'][$ccme]} | ");
 
+				//@angge: add field email (to) if needed
+				if ( function_exists('my_cforms_logic') )
+					$field_email = my_cforms_logic($trackf, $field_email,'fieldEmail');
+				
 	            ###  send copy or notification?
                 ###  not if no email & already CC'ed				
 	            if ( ($cformsSettings['form'.$no]['cforms'.$no.'_confirm']=='1' && $field_email<>'') || ($ccme && $trackf['data'][$ccme]<>'') ){
-
 	                $frommail = cforms2_check_cust_vars(stripslashes($cformsSettings['form'.$no]['cforms'.$no.'_fromemail']),$track);
 
 	                ###  actual user message
@@ -985,7 +991,7 @@ if( isset($_POST['sendbutton'.$no]) && $all_valid ) {
 	                    $mail->add_file($a); ### optional name
                     }
                     
-                    ### handle multiple emails in autoConf field
+                    ### @angge: handle multiple emails in autoConf field
                     if($mail->html_show_ac){
                     	if ( function_exists('my_cforms_logic') )
 	                        $cmsghtml = my_cforms_logic($trackf, $cmsghtml,'adtnlEmailHTML');

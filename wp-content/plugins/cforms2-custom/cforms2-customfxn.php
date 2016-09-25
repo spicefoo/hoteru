@@ -43,6 +43,7 @@ require_once (plugin_dir_path ( __FILE__ ) . 'include/db_rooms.php');
 require_once (plugin_dir_path ( __FILE__ ) . 'include/db_roomrates.php');
 require_once (plugin_dir_path ( __FILE__ ) . 'include/db_options.php');
 require_once (plugin_dir_path ( __FILE__ ) . 'include/db_cformssubmissions.php');
+require_once (plugin_dir_path ( __FILE__ ) . 'include/db_cformsdata.php');
 
 function my_cforms_logic($cformsdata, $oldvalue, $setting) {
 	global $cformsSettings;
@@ -59,13 +60,20 @@ function my_cforms_logic($cformsdata, $oldvalue, $setting) {
 			}else{
 				$oldvalue = str_replace('{quote}', strip_tags($quote), $oldvalue);
 			}
-			
-			//replace room_request placeholder
-			$oldvalue = str_replace('{room_request}', 'Room request here', $oldvalue);
-			
-			//replace confirm_request_url placeholder
-			$oldvalue = str_replace('{confirm_request_url}', genConfirmURL(getFromSession($cformsdata['id'], 'subID')), $oldvalue);
 		}
+		
+		//replace room_request placeholder
+		$oldvalue = str_replace('{room_request}', genRoomRequestTable($cformsdata['id']), $oldvalue);
+			
+		//replace tracking_id placeholder
+		$oldvalue = str_replace('{tracking_id}', md5(genReservationID(getFromSession($cformsdata['id'], 'subID'))), $oldvalue);
+			
+		//replace reservation_id placeholder
+		if(isset($_GET['trackingid'])) //this takes precedence over the subID
+			$oldvalue = str_replace('{reservation_id}', getReservationID($_GET['trackingid']), $oldvalue);
+		else if(getFromSession($cformsdata['id'], 'subID'))
+			$oldvalue = str_replace('{reservation_id}', genReservationID(getFromSession($cformsdata['id'], 'subID')), $oldvalue);
+		
 		
 		return $oldvalue;
 	}
@@ -83,7 +91,7 @@ function my_cforms_logic($cformsdata, $oldvalue, $setting) {
 		return cleanAdtnlEmails($oldvalue);
 	}
 	
-	if( $setting == 'textonly' && $oldvalue != '' ){
+	if( $setting == 'textonly' && $oldvalue != '' ){ //for display
 		//if form has compu field, it means the form has data to be computed and a quotation to show
 		if($oldvalue == 'quote'){
 			
@@ -95,18 +103,83 @@ function my_cforms_logic($cformsdata, $oldvalue, $setting) {
 				return $quote;
 			}
 		}
+		
+		if($oldvalue == 'room_request'){
+			if(!isset($_GET['trackingid']) || strlen($_GET['trackingid']) != 32) {echo "Hello. You are lost."; exit;}
+			
+			//get submit id and details
+			$db_cformssubmissions = new DB_CformsSubmissions();
+			$data = $db_cformssubmissions->getFromTrackingID($_GET['trackingid']);
+			if(!$data) {echo "Hello. You are lost."; exit;}
+			
+			//check if it has been previously confirmed
+			if(hasBeenConfirmed($data->id)) { echo "Thank you for confirming the request!"; exit;}
+			
+			//display normally
+			$request = genRoomRequestTable($data);
+			
+			return $request;
+		}
+		
+	}
+	
+	if (  $setting == "fieldEmail" ){
+		if(isset($_GET['trackingid'])){
+			$isAvailable = strtoupper($cformsdata['data'][$cformsdata['data']['$$$confirm']]) == 'YES';
+			if($isAvailable){
+				$data = getFromTrackingID($_GET['trackingid']);
+				return $data ? $data->email : $oldvalue;
+			}
+		}
+		return $oldvalue;
+		
 	}
 	
 	return $oldvalue;
 }
 
+function update_confirmed_reservation($cformsdata){
+	if(!isset($_GET['trackingid']) || strlen($_GET['trackingid']) != 32) return;
+	
+	$data = getFromTrackingID($_GET['trackingid']);
+	if(!$data) return;
+	
+	$db = new DB_CformsData();
+	return $db->add($data->id, 'confirm', $cformsdata['data'][$cformsdata['data']['$$$confirm']]);
+}
 
-function genConfirmURL($subID){
+function getFromTrackingID($trackingid){
+	$db = new DB_CformsSubmissions();
+	$data = $db->getFromTrackingID($trackingid);
+	return $data;
+}
+
+function hasBeenConfirmed($id){
+	$db_cformsdata = new DB_CformsData();
+	return $db_cformsdata->hasConfirmField($id);
+}
+
+function genRoomRequestTable($data){
+	$db_cformsdata = new DB_CformsData();
+	$gen_data = $db_cformsdata->roomRqstGen($data->id);
+	$room_data = $db_cformsdata->roomRqstList($data->id);
+
+	ob_start();
+	require (plugin_dir_path ( __FILE__ ) . 'include/room_request.php');
+	return ob_get_clean();
+}
+
+function genReservationID($subID){
 	$db = new DB_CformsSubmissions();
 	$data = $db->get($subID);
-	$tracking_id = str_pad($data->form_id, 2, '0', STR_PAD_LEFT) . date_format(date_create($data->sub_date), 'U') . $data->id; //when form id exceeds 99, change padding to 3 digits
-	
-	return "RESERVATION CODE: " . $tracking_id;
+	$tracking_id = $data ? $data->form_id . $data->sub_date . $data->id : '';
+	return $tracking_id;
+}
+
+function getReservationID($trackingid){
+	$data = getFromTrackingID($trackingid);
+	$tracking_id = $data ? $data->form_id . $data->sub_date . $data->id : '';
+	return $tracking_id;
 }
 
 
@@ -414,10 +487,8 @@ function processAdtnlEmails($input_lines, $isHtml){
 			preg_match_all("/>>msg:((.|\s)*+)/i", $e, $msg);
 			$msg = isset($msg[1][0]) ? $msg[1][0] : '';
 			
-				
 			$mail_stat = wp_mail($to, $subj, $msg, $headers);
 
-			
 			if(!$mail_stat) die("Error with sending additional emails");
 		}
 	}
@@ -440,3 +511,4 @@ function cleanString($string){
  */
 // add_action ( 'cforms2_after_processing_action', 'compute_quote' );
 add_action ( 'cforms2_after_processing_action', 'sendto_vtiger' );
+add_action ( 'cforms2_after_processing_action', 'update_confirmed_reservation' );
